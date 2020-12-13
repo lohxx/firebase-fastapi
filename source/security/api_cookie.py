@@ -21,3 +21,5 @@ class APICookieCustom(APIKeyCookie):
             raise HTTPException(
                 status_code=401,
                 detail='Sua sessão expirou, por favor se logue novamente')
+
+        return decoded_claims

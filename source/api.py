@@ -1,7 +1,7 @@
 import datetime
 import logging
 
-from fastapi import APIRouter, Response, Request
+from fastapi import APIRouter, Response, Request, Depends
 from fastapi.security import APIKeyCookie
 from fastapi.responses import JSONResponse
 
@@ -10,6 +10,7 @@ from firebase_admin import auth
 
 from source.models.user import User
 from source.models.user import Authorization
+from source.security.api_cookie import APICookieCustom
 from source.firebase.main import sign_in_with_email_password
 
 
@@ -58,16 +59,10 @@ async def register(user: User) -> dict:
 
 
 @router.post('/logout')
-def logout(request: Request):
-    session_cookie = request.cookies.get('session')
+def logout(decoded_claims: dict = Depends(APICookieCustom(name="session"))):
     response = JSONResponse(content={'message': 'deslogado com sucesso'})
-    try:
-        decoded_claims = auth.verify_session_cookie(session_cookie)
-        auth.revoke_refresh_tokens(decoded_claims['sub'])
-        response.set_cookie('session', expires=0)
-    except (auth.InvalidSessionCookieError, ValueError):
-        pass
-
+    auth.revoke_refresh_tokens(decoded_claims['sub'])
+    response.set_cookie('session', expires=0)
     return response
 
 

@@ -13,8 +13,7 @@ from source.security.api_cookie import APICookieCustom
 
 logger = logging.getLogger('uvicorn.error')
 
-app = FastAPI(
-    dependencies=[Depends(APICookieCustom(name="session"))])
+app = FastAPI()
 
 app.include_router(auth_router, prefix='/auth')
 
@@ -28,7 +27,7 @@ async def http_exception_handle(request, exc):
         content={'message': f'Não foi possível autenticar o usuário no firebase, motivo: {response_error_detail["message"]}'})
 
 
-@app.get('/test')
+@app.get('/test', dependencies=[Depends(APICookieCustom(name="session"))])
 async def search():
     # Testa a validação do cookie.
     return {'message': "ola mundo"}

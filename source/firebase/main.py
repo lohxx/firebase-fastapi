@@ -19,7 +19,7 @@ def sign_in_with_email_password(authorization: Authorization):
     """
 
     response = requests.post(
-        f'{os.environ["GOOGLE_IDENTITY_URL"]}',
+        'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword',
         params={'key': os.environ["API_KEY"]},
         data=json.dumps({
             'returnSecureToken': True,

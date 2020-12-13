@@ -1,98 +1,46 @@
-import datetime
+import os
+import logging
 
-from typing import Optional 
+import requests
 
 import firebase_admin
-from firebase_admin import auth
 
-from pydantic import BaseModel
-
+from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
-from fastapi.security import APIKeyCookie
-from fastapi import FastAPI, Response, Depends, Request
 
-from source.models.user import User
-from source.models.user import Authorization
+from source.api import router as auth_router
 from source.security.api_cookie import APICookieCustom
-from source.firebase.main import sign_in_with_email_password
 
-app = FastAPI()
-default_app = firebase_admin.initialize_app()
+logger = logging.getLogger('uvicorn.error')
+
 cookie_scheme = APICookieCustom(name="session")
 
+app = FastAPI(dependencies=[Depends(cookie_scheme)])
 
-@app.post('/register')
-async def register(user: User):
-    try:
-        user = auth.create_user(
-            disabled=False,
-            email=user.email,
-            email_verified=False,
-            password=user.password,
-            display_name=user.name,
-            phone_number=user.phone_number)
-    except ValueError as e:
-        # Alguma regra de validação do firebase foi quebrada
-        return JSONResponse(
-            status_code=400,
-            content={'message': ''.join(e.args)})
-
-    except firebase_admin._auth_utils.EmailAlreadyExistsError:
-        # Usuario com algumas das chaves unicas já existe na base
-        return JSONResponse(
-            status_code=409,
-            content={'message': 'O e-mail informado já esta associado a outro usuario'})
-
-    except firebase_admin._auth_utils.PhoneNumberAlreadyExistsError:
-        return JSONResponse(
-            status_code=409,
-            content={'message': 'O número de telefone informado já esta associado a outro usuario'})
-
-    return {'message': 'Usuario criado com sucesso'}    
+app.include_router(auth_router, prefix='/auth')
 
 
-@app.get('/logout')
-def logout():
-    pass
+@app.exception_handler(requests.exceptions.HTTPError)
+async def http_exception_handle(request, exc):
+    response_error_detail = exc.response.json()['error']
+
+    return JSONResponse(
+        status_code=response_error_detail['code'],
+        content={'message': f'Não foi possivel autenticar o usuario no firebase, motivo: {response_error_detail["message"]}'})
 
 
-@app.post('/login')
-async def check_user(auth_infos: Authorization, response: Response):
-    """
-    Cria um cookie de sessão para um usuario valido.
-
-    Args:
-        auth_infos (Authorization): informações necessarias para autenticar
-        um usuario no firebase, nesse caso é email e senha.
-
-        response (Response): Objeto response que vai ser devolvido para o cliente.
-
-    Returns:
-        dict: dicionario informando que o login foi bem sucedido.
-    """
-
-    user_metadata = sign_in_with_email_password(auth_infos)
-
-    id_token = user_metadata['idToken']
-
-    expires_in = datetime.timedelta(days=5)
-    try:
-        session_cookie = auth.create_session_cookie(
-            user_metadata['idToken'],
-            expires_in=expires_in)
-
-        expires = datetime.datetime.now() + expires_in
-
-        response.set_cookie(
-            key="session",
-            value=session_cookie)
-
-        return {'message': 'Logado com sucesso'}
-    except Exception:
-        pass
-
-
-@app.get('/search')
-async def search(cookie: str = Depends(cookie_scheme)):
+@app.get('/test')
+async def search():
     # Testa a validação do cookie.
-    return {'message': "conseguiu ver o conteudo, ta logado"}
+    return {'message': "ola mundo"}
+
+
+@app.on_event("startup")
+async def startup_event():
+    firebase_admin.initialize_app()
+
+    for env_var in ['API_KEY', 'GOOGLE_APPLICATION_CREDENTIALS']:
+        try:
+            os.environ[env_var]
+        except Exception:
+            logger.warning(f'É necessario setar a env var {env_var} para que a api funcione corretamente.')

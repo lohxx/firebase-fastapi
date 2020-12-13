@@ -1,9 +1,10 @@
 import datetime
 import logging
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Response, Request
 from fastapi.security import APIKeyCookie
 from fastapi.responses import JSONResponse
+
 
 from firebase_admin import auth
 
@@ -12,13 +13,22 @@ from source.models.user import Authorization
 from source.firebase.main import sign_in_with_email_password
 
 
-logger = logging.getLogger()
+logger = logging.getLogger('uvicorn.error')
 
 router = APIRouter()
 
 
 @router.post('/register')
-async def register(user: User):
+async def register(user: User) -> dict:
+    """
+    Registra um usuário no firebase authentication
+
+    Args:
+        user (User): Dados do usuário.
+
+    Returns:
+        dict: dict indicando sucesso na criação do usuario.
+    """
     try:
         user = auth.create_user(
             disabled=False,
@@ -47,13 +57,22 @@ async def register(user: User):
     return {'message': 'Usuario criado com sucesso'}    
 
 
-@router.get('/logout')
-def logout():
-    pass
+@router.post('/logout')
+def logout(request: Request):
+    session_cookie = request.cookies.get('session')
+    response = JSONResponse(content={'message': 'deslogado com sucesso'})
+    try:
+        decoded_claims = auth.verify_session_cookie(session_cookie)
+        auth.revoke_refresh_tokens(decoded_claims['sub'])
+        response.set_cookie('session', expires=0)
+    except (auth.InvalidSessionCookieError, ValueError):
+        pass
+
+    return response
 
 
 @router.post('/login')
-async def check_user(auth_infos: Authorization, response: Response):
+async def check_user(auth_infos: Authorization, response: Response) -> dict:
     """
     Cria um cookie de sessão para um usuario valido.
 
@@ -84,5 +103,5 @@ async def check_user(auth_infos: Authorization, response: Response):
             value=session_cookie)
 
         return {'message': 'Logado com sucesso'}
-    except Exception:
-        pass
+    except Exception as e:
+        logger.exception(e)

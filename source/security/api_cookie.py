@@ -1,9 +1,7 @@
 from fastapi import Request
 from fastapi.security import APIKeyCookie
-from fastapi.responses import RedirectResponse
 
 from starlette.exceptions import HTTPException
-from starlette.status import HTTP_403_FORBIDDEN
 
 from firebase_admin import auth
 
@@ -16,12 +14,10 @@ class APICookieCustom(APIKeyCookie):
 
     async def __call__(self, request: Request):
         session_cookie = request.cookies.get(self.model.name)
-
-        if not session_cookie:
-            return RedirectResponse('/login')
-
         try:
             decoded_claims = auth.verify_session_cookie(
                 session_cookie, check_revoked=True)
-        except auth.InvalidSessionCookieError:
-            return RedirectResponse('/login')
+        except (auth.InvalidSessionCookieError, ValueError):
+            raise HTTPException(
+                status_code=401,
+                detail='Sua sessão expirou, por favor se logue novamente')

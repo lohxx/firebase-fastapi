@@ -13,9 +13,8 @@ from source.security.api_cookie import APICookieCustom
 
 logger = logging.getLogger('uvicorn.error')
 
-cookie_scheme = APICookieCustom(name="session")
-
-app = FastAPI(dependencies=[Depends(cookie_scheme)])
+app = FastAPI(
+    dependencies=[Depends(APICookieCustom(name="session"))])
 
 app.include_router(auth_router, prefix='/auth')
 
@@ -26,7 +25,7 @@ async def http_exception_handle(request, exc):
 
     return JSONResponse(
         status_code=response_error_detail['code'],
-        content={'message': f'Não foi possivel autenticar o usuario no firebase, motivo: {response_error_detail["message"]}'})
+        content={'message': f'Não foi possível autenticar o usuário no firebase, motivo: {response_error_detail["message"]}'})
 
 
 @app.get('/test')
@@ -39,7 +38,7 @@ async def search():
 async def startup_event():
     firebase_admin.initialize_app()
 
-    for env_var in ['API_KEY', 'GOOGLE_APPLICATION_CREDENTIALS']:
+    for env_var in ['FIREBASE_API_KEY', 'GOOGLE_APPLICATION_CREDENTIALS']:
         try:
             os.environ[env_var]
         except Exception:

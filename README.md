@@ -1,8 +1,11 @@
+
+
+
 # firebase-fastapi
-Integração com o serviço de autenticação do firebase usando python e fastapi. Essa API usa o esquema de autenticação de email e senha.
+Integração com o serviço de autenticação do firebase usando python e fastapi. Essa API usa o esquema de autenticação de e-mail e senha.
 
 # Como executar 
-Para executar o código desse repositorio é necessario ter um projeto valido no firebase.
+Para executar o código desse repositório é necessario ter um projeto valido no firebase.
 
 ## Instalação usando o pipenv
 
@@ -17,12 +20,11 @@ pipenv install
 
 ## Execução do projeto.
 
-Definir as seguinter variaveis de ambiente.
-
-API_KEY -- api key do seu projeto, para autenticar seu usuário na API Rest do firebase.
-
-GOOGLE_APPLICATION_CREDENTIALS -- caminho das credencias do seu projeto no firebase.
-
+Definir as seguintes variáveis de ambiente.
+| Variáveis                      | descrição                                                                    |
+|--------------------------------|------------------------------------------------------------------------------|
+| API_KEY                        | api key do seu projeto, para autenticar seu usuário na API Rest do firebase. |
+| GOOGLE_APPLICATION_CREDENTIALS | caminho das credenciais do seu projeto no firebase.                          |
 
 Iniciar o servidor.
 ```bash

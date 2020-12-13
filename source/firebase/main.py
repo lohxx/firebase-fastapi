@@ -20,7 +20,7 @@ def sign_in_with_email_password(authorization: Authorization):
 
     response = requests.post(
         'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword',
-        params={'key': os.environ["API_KEY"]},
+        params={'key': os.environ["FIREBASE_API_KEY"]},
         data=json.dumps({
             'returnSecureToken': True,
             'email': authorization.email,

@@ -55,7 +55,9 @@ async def register(user: User) -> dict:
             status_code=409,
             content={'message': 'O número de telefone informado já esta associado a outro usuario'})
 
-    return {'message': 'Usuario criado com sucesso'}    
+    return JSONResponse(
+        status_code=201,
+        content={'name': user.display_name, 'email': user.email})
 
 
 @router.post('/logout')
